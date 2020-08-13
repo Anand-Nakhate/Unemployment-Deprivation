@@ -1,0 +1,61 @@
+------------------------------Unemployment Deprivation Across Religious Groups------------------------------------------------------------------------------------------------
+#Write the name of the variable of interest to analuze in $$$$$$
+# select form the following
+
+state gender religion caste_category caste literacy region_type
+generate var = .
+tabulate $$$$$$, generate(var)
+
+#The following table is an example generated from the religion generated on the basis of the cumilative data of the 12 waves of data
+
+           religion |      Freq.     Percent        Cum.
+--------------------+-----------------------------------
+           Buddhist |        205        0.58        0.58
+          Christian |        314        0.89        1.47
+              Hindu |     29,912       84.86       86.33
+               Jain |         73        0.21       86.54
+             Muslim |      3,152        8.94       95.48
+     Other Religion |          1        0.00       95.48
+               Sikh |      1,592        4.52      100.00
+--------------------+-----------------------------------
+              Total |     35,249      100.00
+			  
+			  
+	#The numberings are given based on the above table 1 for Buddhist and so on. 
+	#Select the value of the religion that you want to analyze and put the number in place of $ in the following command
+	drop if(var$!=1)
+	#Now execute the following commands to get unemployment deprivation based on various metrics.
+	
+	#unemp unempvar [weights] [if exp] [in range] , hid(hidvar) [ hsize(hsizevar) thao(#) format(%9.#f) gamma(# [# ...]) alpha(# [# ...]) generate(newvar) decomp ]
+
+	
+	desc
+	unemp unemployed [aw=w] , hid(hid) gamma(1)
+	unemp hgap [aw=w] , hid(hid)
+	ret list
+	gen hs=1
+	unemp hgap [aw=w], hid(hid) hs(hs)
+	unemp hgap [aw=w], hid(hid) hs(hsize)
+	unemp hgap [aw=w] , hid(hid) hs(hsize) gen(u)
+	desc u_*
+	gen mu_2=-u_2
+	glcurve u_2 [aw=w*hsize] , sort(mu_2)
+	akdensity u_1 if u_1>0 [aw=w*hsize], at(u_1)
+	unemp hgap [aw=w] if country==1, hid(hid) hs(hsize) th(.2) gamma(0 1 2 3) alpha(1 2 3 4)
+	 unemp unemployed [aw=w], hid(hid) g(1) a(1)
+	unemp unemployed [aw=w] if head==1 , hid(hid) g(1) a(1)
+	unemp unemployed [aw=w] if head==1 , hid(hid) hs(hsize) g(1) a(1)
+	unemp unemployed [aw=w] if head==1 , hid(hid) hs(hsize) g(1) a(1)
+	 unemp unemployed [aw=w], hid(hid) hs(hsize) thao(1) g(1) a(1)
+	 unemp hgap [aw=w], hid(hid) hs(hsize) decomp
+	 cap program drop hhu
+
+        program def hhu
+
+        unemp hgap [aw=w], hid(hid) hs(hsize)
+
+        end
+
+        bootstrap r(U_0_2) r(U_1_2) r(U_2_2) if country==1, reps(10): hhu
+
+        estat bootstrap
